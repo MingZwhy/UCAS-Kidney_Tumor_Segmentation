@@ -27,6 +27,7 @@ def predict_and_save_result(model, save_evaluate_image_dir_path, predict_result_
     num_of_img = len(img_path)
 
     for index in range(num_of_img):
+        print("predict %d" %index)
         img_decode = load_test_image(img_path[index])
         img_decode_ex = tf.expand_dims(img_decode,0)
         pred_mask = model.predict(img_decode_ex)

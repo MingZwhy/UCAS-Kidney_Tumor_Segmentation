@@ -11,6 +11,7 @@ import dataset
 import Unet_mode
 import train
 import predict
+import evaluate
 
 if __name__ == '__main__':
     # Parse command line arguments
@@ -20,6 +21,10 @@ if __name__ == '__main__':
     parser.add_argument(
         "-p", "--nii_data_dir_path", required=True, default="D:/lumor_segementation/kits19-master/",
         help="must tell py where your nii_data file are (path), for example: D:/lumor_segementation/kits19-master/"
+    )
+    parser.add_argument(
+        "-a", "--if_process_data", required=True, default="True",
+        help="if you run it first, you should choose True so that it will process the data automatically"
     )
     parser.add_argument(
         "-i", "--if_save_weights", required=False, default="True",
@@ -32,6 +37,14 @@ if __name__ == '__main__':
     parser.add_argument(
         "-e", "--train_epochs", required=False, default=20,
         help="choose the num of epochs for train model"
+    )
+    parser.add_argument(
+        "-m", "--model_kind", required=False, default="FCN_model",
+        help="choose the train model"
+    )
+    parser.add_argument(
+        "-d", "--if_predict", required=False, default="False",
+        help="whether to predirc data without label"
     )
     args = parser.parse_args()
 
@@ -50,7 +63,7 @@ if __name__ == '__main__':
     predict_result_dir_path = dir_path + "predict_result/"
 
     # 检查路径 并 创建子目录
-    if (os.path.exists(load_nii_dir_path) == False):
+    if (args.if_process_data == "True" and os.path.exists(load_nii_dir_path) == False):
         print("wrong nii_data_dir_path or name of nii_file is not 'data'")
         print("please check your path and name of nii_file then run again")
     else:
@@ -66,10 +79,11 @@ if __name__ == '__main__':
             os.makedirs(predict_result_dir_path)
 
     #处理nii文件
-    dataset.process_haslabel_pic(load_nii_dir_path, save_image_dir_path,
-                                 save_segemen_dir_path, 210)
-    dataset.process_nolabel_pic(load_nii_dir_path, save_evaluate_image_dir_path,
-                                begin_index = 210, num_of_nii = 18)
+    if(args.if_process_data == "True"):
+        dataset.process_haslabel_pic(load_nii_dir_path, save_image_dir_path,
+                                    save_segemen_dir_path, 210)
+        dataset.process_nolabel_pic(load_nii_dir_path, save_evaluate_image_dir_path,
+                                    begin_index = 210, num_of_nii = 18)
 
     if_save = True
     if(args.if_save_weights != "True"):
@@ -80,11 +94,15 @@ if __name__ == '__main__':
     epochs = int(args.train_epochs)
 
     #制作dataset
-    train_ds, test_ds, step_per_epoch, val_step = train.make_dataset(save_image_dir_path, save_segemen_dir_path)
+    train_ds, test_ds, evaluate_ds, step_per_epoch, val_step = train.make_dataset(save_image_dir_path, save_segemen_dir_path)
 
     #训练model
-    model = train.train_mode(train_ds, test_ds, step_per_epoch, val_step,
+    model = train.train_mode(train_ds, test_ds, step_per_epoch, val_step, args.model_kind,
                              save_model_dir_path, if_save, learn_rate, epochs)
 
+    #在检验集上对结果进行评估
+    evaluate.evaluate_model(model, evaluate_ds)
+
     #对无标签图像进行预测
-    predict.predict_and_save_result(model, save_evaluate_image_dir_path, predict_result_dir_path)
+    if(args.if_predict == "True"):
+        predict.predict_and_save_result(model, save_evaluate_image_dir_path, predict_result_dir_path)

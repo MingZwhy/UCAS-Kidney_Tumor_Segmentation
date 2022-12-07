@@ -100,3 +100,6 @@ class Unet_model(tf.keras.Model):
 
         return x5
 
+#model = Unet_model()
+#model.build(input_shape=(None,256,256,3))
+#model.summary()
