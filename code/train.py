@@ -41,7 +41,8 @@ def load_image(img_path, mask_path):
 
 # 制作dataset
 def make_dataset(image_dir_path, segemen_dir_path, BATCH_SIZE = 8,
-                 SHUFF_SIZE = 200, train_ratio = 0.7, test_ratio = 0.2, eva_ratio = 0.1):
+                 SHUFF_SIZE = 200, train_ratio = 0.7, test_ratio = 0.2, eva_ratio = 0.1,
+                 model_kind = "FCN_model"):
     """
     由image和 segemen 制作dataset
 
@@ -96,9 +97,11 @@ def make_dataset(image_dir_path, segemen_dir_path, BATCH_SIZE = 8,
     test_ds = test_eva_ds.take(test_count)
     evaluate_ds = test_eva_ds.skip(test_count)
 
-    #对训练集 shuffle + batch
+    #对训练集 shuffle + batch (对FCN_model，因为用到model.fit，所以需要repeat())
     #对测试集 检验集 batch
     train_ds = train_ds.shuffle(SHUFF_SIZE).batch(BATCH_SIZE)
+    if(model_kind == "FCN_model"):
+        train_ds = train_ds.repeat()
     test_ds = test_ds.batch(BATCH_SIZE)
     evaluate_ds = evaluate_ds.batch((BATCH_SIZE))
 

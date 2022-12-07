@@ -94,7 +94,15 @@ if __name__ == '__main__':
     epochs = int(args.train_epochs)
 
     #制作dataset
-    train_ds, test_ds, evaluate_ds, step_per_epoch, val_step = train.make_dataset(save_image_dir_path, save_segemen_dir_path)
+    train_ds, test_ds, evaluate_ds, step_per_epoch, val_step = train.make_dataset(
+        image_dir_path = save_image_dir_path,
+        segemen_dir_path = save_segemen_dir_path,
+        BATCH_SIZE = 8,
+        SHUFF_SIZE = 200,
+        train_ratio = 0.7,
+        test_ratio = 0.2,
+        eva_ratio = 0.1,
+        model_kind = args.model_kind)
 
     #训练model
     model = train.train_mode(train_ds, test_ds, step_per_epoch, val_step, args.model_kind,

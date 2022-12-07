@@ -24,7 +24,7 @@ step3  运行start_code中的get_imaging.py或get_imaging_v2.py文件 <br />
 		  获取训练所需数据集。<br />
 
 step4  git clone 本仓库 <br />
-step5  运行main.py（不要改变刚刚下载的数据集所在文件夹名字）<br />
+step5  运行main.py（不要改变刚刚下载的数据集所在文件夹名字，仍名为"data"）<br />
 		  需要输入数据集所在文件夹的根目录<br />
 		  例如：我的数据集所在路径为：<br />
 		  D:/lumor_segementation/kits19-master/data/<br />
@@ -32,8 +32,10 @@ step5  运行main.py（不要改变刚刚下载的数据集所在文件夹名字
 		  D:/lumor_segementation/kits19-master/ <br />
 
 运行命令：
-python main.py --nii_data_dir_path D:/lumor_segementation/kits19-master/ <br />
-						 --if_save_weights True <br />
+python main.py --nii_data_dir_path "D:/lumor_segementation/kits19-master/" <br />
+						 --if_process_data "True" (如果你首次运行需要处理数据，则True，后续不需要重复) <br >
+						 --if_save_weights "True" <br />
+						 --model_kind "FCN_model" / "Unet" / "LinkNet" 三选一 <br />
 						 --learn_rate 0.0001 <br />
 						 --train_epochs 20 <br />
 
