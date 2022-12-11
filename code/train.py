@@ -8,6 +8,8 @@ import FCN_model
 import Unet_mode
 import Linknet_mode
 
+import matplotlib
+
 # 读取图像
 def read_png(path):
     img = tf.io.read_file(path)

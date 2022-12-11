@@ -109,7 +109,7 @@ if __name__ == '__main__':
                              save_model_dir_path, if_save, learn_rate, epochs)
 
     #在检验集上对结果进行评估
-    evaluate.evaluate_model(model, evaluate_ds)
+    evaluate.evaluate_model(model, evaluate_ds, args.model_kind)
 
     #对无标签图像进行预测
     if(args.if_predict == "True"):
