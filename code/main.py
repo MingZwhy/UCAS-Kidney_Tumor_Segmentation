@@ -58,6 +58,7 @@ if __name__ == '__main__':
     save_image_dir_path = dir_path + "p_image/"
     save_segemen_dir_path = dir_path + "p_segemen/"
     save_model_dir_path = dir_path + "model_weights/"
+    save_tensorboard_path = dir_path + "callback/"
 
     save_evaluate_image_dir_path = dir_path + "evaluate_image/"
     predict_result_dir_path = dir_path + "predict_result/"
@@ -77,6 +78,8 @@ if __name__ == '__main__':
             os.makedirs(save_evaluate_image_dir_path)
         if (os.path.exists(predict_result_dir_path) == False):
             os.makedirs(predict_result_dir_path)
+        if (os.path.exists(save_tensorboard_path) == False):
+            os.makedirs(save_tensorboard_path)
 
     #处理nii文件
     if(args.if_process_data == "True"):
@@ -106,7 +109,7 @@ if __name__ == '__main__':
 
     #训练model
     model = train.train_mode(train_ds, test_ds, step_per_epoch, val_step, args.model_kind,
-                             save_model_dir_path, if_save, learn_rate, epochs)
+                             save_model_dir_path, save_tensorboard_path, if_save, learn_rate, epochs)
 
     #在检验集上对结果进行评估
     evaluate.evaluate_model(model, evaluate_ds, args.model_kind)

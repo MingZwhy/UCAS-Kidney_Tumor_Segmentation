@@ -3,6 +3,8 @@ from tensorflow import keras
 import matplotlib.pyplot as plt
 import numpy as np
 import glob
+import os
+import datetime
 
 import FCN_model
 import Unet_mode
@@ -147,7 +149,8 @@ def test_step(images, labels, model,
     test_iou(labels, predictions)
 
 def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind,
-               save_model_dir_path, if_save = True, learn_rate = 0.0001, epochs = 50):
+               save_model_dir_path, save_tensorboard_path,
+               if_save = True, learn_rate = 0.0001, epochs = 50):
     """
     训练模型并保存训练好的模型
     :param train_ds: 训练集
@@ -155,11 +158,17 @@ def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind,
     :param step_per_epoch: 训练步长
     :param val_step: 测试步长
     :param save_model_dir_path: 模型参数保存根目录
+    :param save_tensorboard_path: callback保存根目录
     :param if_save: 是否保存训练好的模型的参数
     :param learn_rate: 学习速率，默认为0.0001
     :param epochs: 训练的轮数，默认为50
     return: model
     """
+    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir = os.path.join(save_tensorboard_path, model_kind)
+    if (os.path.exists(log_dir) == False):
+        os.makedirs(log_dir)
+
     if(model_kind == "FCN_model"):
         model = FCN_model.FCN_model()   # 实例化定义好的FCN模型
     elif(model_kind == "Unet"):
@@ -178,12 +187,24 @@ def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind,
                       loss='sparse_categorical_crossentropy',
                       metrics=['acc'])
 
+        #添加tensorboard callback
+        log_dir = os.path.join(log_dir, current_time)
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir, histogram_freq=1)
+
         model.fit(train_ds,
                   epochs=epochs,
                   steps_per_epoch=step_per_epoch,
                   validation_data=test_ds,
-                  validation_steps=val_step)
+                  validation_steps=val_step,
+                  callbacks = [tensorboard_callback]
+                  )
     else:
+        #生产记录tensorboard的路径
+        train_log_dir = os.path.join(log_dir, current_time, "train")
+        test_log_dir = os.path.join(log_dir, current_time, "test")
+        train_writer = tf.summary.create_file_writer(train_log_dir)
+        test_writer = tf.summary.create_file_writer(test_log_dir)
+
         #对unet和linknet，我们使用自定义训练模型，引入IOU评价指标
         #定义优化器opt
         opt = tf.keras.optimizers.Adam(learn_rate)
@@ -218,6 +239,12 @@ def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind,
                            opt, loss_fn,
                            train_loss, train_acc, train_iou)
 
+            #记录入tensorboard
+            with train_writer.as_default():
+                tf.summary.scalar("loss", train_loss.result(), step = epoch)
+                tf.summary.scalar("acc", train_acc.result(), step=epoch)
+                tf.summary.scalar("IOU", train_iou.result(), step=epoch)
+
             print("testing......")
             for images, labels in test_ds:
                 if (test_index % 50 == 0):
@@ -226,6 +253,12 @@ def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind,
                 test_step(images, labels, model,
                           loss_fn,
                           test_loss, test_acc, test_iou)
+
+            #记录入tensorboard
+            with test_writer.as_default():
+                tf.summary.scalar("loss", test_loss.result(), step = epoch)
+                tf.summary.scalar("acc", test_acc.result(), step=epoch)
+                tf.summary.scalar("IOU", test_iou.result(), step=epoch)
 
             print("the epoch", epoch + 1, " result: ")
             template1 = "train --> Loss: {:.2f}, Accuracy: {:.2f}, IOU: {:.2f}"
