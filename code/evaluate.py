@@ -21,9 +21,9 @@ def evaluate_model(model, evaluate_ds, model_kind):
     eva_iou = train.MeanIOU(3, name = 'eva_iou')
 
     #初始化状态
-    eva_loss.reset_state()
-    eva_acc.reset_state()
-    eva_iou.reset_state()
+    eva_loss.reset_states()
+    eva_acc.reset_states()
+    eva_iou.reset_states()
 
     for images, labels in evaluate_ds:
         predictions = model(images)
