@@ -119,3 +119,7 @@ class LinkNet(tf.keras.Model):
         f = self.deconv_last2(f, is_act=False)  # 输出不被激活
 
         return f
+
+#model = LinkNet()
+#model.build(input_shape =(None,256,256,3))
+#model.summary()

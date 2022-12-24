@@ -1,0 +1,31 @@
+<mxfile host="65bd71144e">
+    <diagram id="QldQ1EyxueXQ8mvaaejj" name="Page-1">
+        <mxGraphModel dx="1401" dy="769" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="4" value="" style="edgeStyle=none;html=1;fontSize=24;" edge="1" parent="1" source="2" target="3">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="&lt;font style=&quot;font-size: 24px&quot;&gt;对图像上的每个像素点&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFCC;" vertex="1" parent="1">
+                    <mxGeometry x="110" y="350" width="160" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;fontSize=24;" vertex="1" parent="1">
+                    <mxGeometry x="350" y="235" width="60" height="310" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="分为三类" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;" vertex="1" parent="1">
+                    <mxGeometry x="290" y="340" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="0：背景" style="rounded=0;whiteSpace=wrap;html=1;fontSize=24;fillColor=#CCCCCC;" vertex="1" parent="1">
+                    <mxGeometry x="430" y="210" width="230" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="1：肾脏" style="rounded=0;whiteSpace=wrap;html=1;fontSize=24;fillColor=#E6FFCC;" vertex="1" parent="1">
+                    <mxGeometry x="430" y="360" width="230" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="2：肿瘤" style="rounded=0;whiteSpace=wrap;html=1;fontSize=24;fillColor=#FF3333;" vertex="1" parent="1">
+                    <mxGeometry x="430" y="520" width="230" height="60" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

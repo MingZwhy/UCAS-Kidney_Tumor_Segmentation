@@ -3,7 +3,7 @@ import train
 
 def evaluate_model(model, evaluate_ds, model_kind):
     print("begin to evaluate the model:")
-    if(model_kind == "FCN_model"):
+    if(model_kind == "FCN_model_auto"):
         loss,accuracy = model.evaluate(evaluate_ds)
         print("using FCN_model:")
         print("loss: ", loss)
@@ -13,7 +13,10 @@ def evaluate_model(model, evaluate_ds, model_kind):
     #对Unet和Linknet模型，无法使用model.fit方法，需要自定义评估
 
     #定义损失函数
-    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    if (model_kind != "FCN_model" and model_kind != "FCN_model_auto"):
+        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    else:
+        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
 
     #定义评估参数
     eva_loss = tf.keras.metrics.Mean(name='eva_loss')
@@ -38,6 +41,6 @@ def evaluate_model(model, evaluate_ds, model_kind):
     else:
         print("Using LinkNet_model:")
 
-    template1 = "evaluate --> Loss: {:.2f}, Accuracy: {:.2f}, IOU: {:.2f}"
+    template1 = "evaluate --> Loss: {:.5f}, Accuracy: {:.5f}, IOU: {:.5f}"
     print(template1.format(eva_loss.result(), eva_acc.result() * 100, eva_iou.result()))
     return eva_loss.result(), eva_acc.result(), eva_iou.result()

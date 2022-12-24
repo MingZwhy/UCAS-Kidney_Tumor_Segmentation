@@ -40,6 +40,23 @@ def normalize(img, mask):
 def load_image(img_path, mask_path):
     img = read_png(img_path)
     mask = read_png_label(mask_path)
+
+    img, mask = normalize(img, mask)
+    return img, mask
+
+def intensify_load_image(img_path, mask_path):
+    img = read_png(img_path)
+    mask = read_png_label(mask_path)
+
+    # 数据增强
+    if (tf.random.uniform(()) > 0.5):
+        img = tf.image.flip_left_right(img)
+        mask = tf.image.flip_left_right(mask)
+
+    if (tf.random.uniform(()) > 0.5):
+        img = tf.image.flip_up_down(img)
+        mask = tf.image.flip_up_down(mask)
+
     img, mask = normalize(img, mask)
     return img, mask
 
@@ -86,6 +103,7 @@ def make_dataset(image_dir_path, segemen_dir_path, BATCH_SIZE = 8,
 
     # 制作整体dataset
     all_ds = tf.data.Dataset.from_tensor_slices((image, label))
+    temp_all_ds = all_ds
     all_ds = all_ds.map(load_image)
 
     # 划分train_dataset 和 test_dataset
@@ -104,12 +122,26 @@ def make_dataset(image_dir_path, segemen_dir_path, BATCH_SIZE = 8,
     #对训练集 shuffle + batch (对FCN_model，因为用到model.fit，所以需要repeat())
     #对测试集 检验集 batch
     train_ds = train_ds.shuffle(SHUFF_SIZE).batch(BATCH_SIZE)
-    if(model_kind == "FCN_model"):
+    if(model_kind == "FCN_model_auto"):
         train_ds = train_ds.repeat()
     test_ds = test_ds.batch(BATCH_SIZE)
     evaluate_ds = evaluate_ds.batch((BATCH_SIZE))
 
-    return train_ds, test_ds, evaluate_ds, step_per_epoch, val_step
+    return train_ds, test_ds, evaluate_ds, step_per_epoch, val_step, temp_all_ds, length
+
+def remake_dataset(all_ds, length):
+    all_ds = all_ds.map(load_image)
+
+    train_count = int(length * 0.9)
+    test_count = int(length * 0.2)
+    eva_count = length - train_count - test_count
+
+    train_ds = all_ds.take(train_count)
+    step_per_epoch = train_count // 8
+
+    train_ds = train_ds.shuffle(200).batch(8)
+
+    return train_ds, step_per_epoch
 
 #定义IOU评估
 class MeanIOU(tf.keras.metrics.MeanIoU):   #父类的方法需要y_true 和 y_pred有相同形状
@@ -148,8 +180,8 @@ def test_step(images, labels, model,
     test_acc(labels, predictions)
     test_iou(labels, predictions)
 
-def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind,
-               save_model_dir_path, save_tensorboard_path,
+def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind, if_intensify_image,
+               save_model_dir_path, save_tensorboard_path, all_ds, length,
                if_save = True, learn_rate = 0.0001, epochs = 50):
     """
     训练模型并保存训练好的模型
@@ -157,29 +189,38 @@ def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind,
     :param test_ds: 测试集
     :param step_per_epoch: 训练步长
     :param val_step: 测试步长
+    :param model_kind: 模型种类
+    :paran if_intensify_image: 是否进行数据增强
     :param save_model_dir_path: 模型参数保存根目录
     :param save_tensorboard_path: callback保存根目录
+    :param all_ds : 为了数据增强使用
+    :param length : 为了数据增强使用
     :param if_save: 是否保存训练好的模型的参数
     :param learn_rate: 学习速率，默认为0.0001
     :param epochs: 训练的轮数，默认为50
     return: model
     """
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    print(current_time)
+
     log_dir = os.path.join(save_tensorboard_path, model_kind)
     if (os.path.exists(log_dir) == False):
         os.makedirs(log_dir)
 
-    if(model_kind == "FCN_model"):
+    if(model_kind == "FCN_model" or model_kind == "FCN_model_auto"):
         model = FCN_model.FCN_model()   # 实例化定义好的FCN模型
     elif(model_kind == "Unet"):
         model = Unet_mode.Unet_model()  # 实例化定义好的U-NET模型
+        #model.build(input_shape=(None, 256, 256, 3))
+        #model.load_weights("D:/lumor_segementation/kits19-master/Unet_model_weights.h5")
+
     elif(model_kind == "LinkNet"):
         model = Linknet_mode.LinkNet()  # 实例化定义好的LinkNet模型
     else:
         print("wrong model kind")
         return
 
-    if(model_kind == "FCN_model"):
+    if(model_kind == "FCN_model_auto"):
         # FCN_model是我们的baseline，没有使用自定义训练
         #而是直接使用tensorflow的API进行训练
         #对FCN没有使用IOU的评估
@@ -209,7 +250,10 @@ def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind,
         #定义优化器opt
         opt = tf.keras.optimizers.Adam(learn_rate)
         #定义损失函数
-        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        if(model_kind != "FCN_model" and model_kind != "FCN_model_auto"):
+            loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        else:
+            loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
 
         train_loss = tf.keras.metrics.Mean(name='train_loss')
         train_acc = tf.keras.metrics.SparseCategoricalAccuracy(name='train_acc')
@@ -220,6 +264,12 @@ def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind,
         test_iou = MeanIOU(3, name='test_iou')
 
         for epoch in range(epochs):
+            # 进行数据增强
+            #if(if_intensify_image):
+                #train_ds, step_per_epoch = remake_dataset(all_ds, length)
+
+            #if(epoch == 6):
+                #opt = tf.keras.optimizers.Adam(0.0001)
             train_index = 1
             test_index = 1
             # 在下一个epoch开始时，重置评估指标
@@ -261,10 +311,11 @@ def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind,
                 tf.summary.scalar("IOU", test_iou.result(), step=epoch)
 
             print("the epoch", epoch + 1, " result: ")
-            template1 = "train --> Loss: {:.2f}, Accuracy: {:.2f}, IOU: {:.2f}"
+            template1 = "train --> Loss: {:.2f}, Accuracy: {:.2f}, IOU: {:.3f}"
             print(template1.format(train_loss.result(), train_acc.result() * 100, train_iou.result()))
-            template2 = "test  --> Loss: {:.2f}, Accuracy: {:.2f}, IOU: {:.2f}"
+            template2 = "test  --> Loss: {:.2f}, Accuracy: {:.2f}, IOU: {:.3f}"
             print(template2.format(test_loss.result(), test_acc.result() * 100, test_iou.result()))
+
 
         print("finish all ", epochs, " epochs!")\
 
@@ -279,6 +330,9 @@ def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind,
         else:
             model.save_weights(save_model_dir_path + "LinkNet_model_weights.h5")
         print("save successfully in " + save_model_dir_path)
+
+    end_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    print(end_time)
 
     return model
 

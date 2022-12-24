@@ -35,11 +35,15 @@ if __name__ == '__main__':
         help="choose the learn_rate"
     )
     parser.add_argument(
-        "-e", "--train_epochs", required=False, default=20,
+        "-e", "--train_epochs", required=False, default=15,
         help="choose the num of epochs for train model"
     )
     parser.add_argument(
         "-m", "--model_kind", required=False, default="FCN_model",
+        help="choose the train model"
+    )
+    parser.add_argument(
+        "-t", "--if_intensify_image", required=False, default="False",
         help="choose the train model"
     )
     parser.add_argument(
@@ -92,12 +96,17 @@ if __name__ == '__main__':
     if(args.if_save_weights != "True"):
         if_save = False
 
+    if_intensify_image = False
+    if(args.if_intensify_image == "True"):
+        if_intensify_image = True
+
     learn_rate = float(args.learn_rate)
     print(learn_rate)
     epochs = int(args.train_epochs)
 
     #制作dataset
-    train_ds, test_ds, evaluate_ds, step_per_epoch, val_step = train.make_dataset(
+    train_ds, test_ds, evaluate_ds, step_per_epoch, val_step, all_ds, length \
+        = train.make_dataset(
         image_dir_path = save_image_dir_path,
         segemen_dir_path = save_segemen_dir_path,
         BATCH_SIZE = 8,
@@ -108,8 +117,8 @@ if __name__ == '__main__':
         model_kind = args.model_kind)
 
     #训练model
-    model = train.train_mode(train_ds, test_ds, step_per_epoch, val_step, args.model_kind,
-                             save_model_dir_path, save_tensorboard_path, if_save, learn_rate, epochs)
+    model = train.train_mode(train_ds, test_ds, step_per_epoch, val_step, args.model_kind, args.if_intensify_image,
+                             save_model_dir_path, save_tensorboard_path, all_ds, length, if_save, learn_rate, epochs)
 
     #在检验集上对结果进行评估
     evaluate.evaluate_model(model, evaluate_ds, args.model_kind)
