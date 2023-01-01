@@ -132,7 +132,7 @@ def make_dataset(image_dir_path, segemen_dir_path, BATCH_SIZE = 8,
 def remake_dataset(all_ds, length):
     all_ds = all_ds.map(load_image)
 
-    train_count = int(length * 0.9)
+    train_count = int(length * 0.7)
     test_count = int(length * 0.2)
     eva_count = length - train_count - test_count
 
@@ -211,8 +211,6 @@ def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind, if_inten
         model = FCN_model.FCN_model()   # 实例化定义好的FCN模型
     elif(model_kind == "Unet"):
         model = Unet_mode.Unet_model()  # 实例化定义好的U-NET模型
-        #model.build(input_shape=(None, 256, 256, 3))
-        #model.load_weights("D:/lumor_segementation/kits19-master/Unet_model_weights.h5")
 
     elif(model_kind == "LinkNet"):
         model = Linknet_mode.LinkNet()  # 实例化定义好的LinkNet模型
@@ -265,8 +263,8 @@ def train_mode(train_ds, test_ds, step_per_epoch, val_step, model_kind, if_inten
 
         for epoch in range(epochs):
             # 进行数据增强
-            #if(if_intensify_image):
-                #train_ds, step_per_epoch = remake_dataset(all_ds, length)
+            if(if_intensify_image):
+                train_ds, step_per_epoch = remake_dataset(all_ds, length)
 
             #if(epoch == 6):
                 #opt = tf.keras.optimizers.Adam(0.0001)
